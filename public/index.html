@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guess the Number</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="nav-brand">GUESS<span class="accent">.</span>JS</div>
+    <div class="nav-right">
+      <span id="nav-user" class="nav-user hidden"></span>
+      <button id="nav-login-btn" class="nav-btn" onclick="showAuthModal('login')">Log In</button>
+      <button id="nav-register-btn" class="nav-btn accent-btn" onclick="showAuthModal('register')">Register</button>
+      <button id="nav-logout-btn" class="nav-btn hidden" onclick="logout()">Log Out</button>
+      <button id="nav-leaderboard-btn" class="nav-btn" onclick="showScreen('leaderboard')">Leaderboard</button>
+    </div>
+  </nav>
+
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeAuthModal()"></div>
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeAuthModal()">&times;</button>
+      <h2 id="auth-modal-title">Log In</h2>
+      <form id="auth-form" onsubmit="handleAuth(event)">
+        <div class="form-group">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" autocomplete="current-password" required>
+        </div>
+        <div id="auth-error" class="error-msg hidden"></div>
+        <button type="submit" id="auth-submit-btn" class="btn primary-btn">Log In</button>
+      </form>
+      <p class="auth-switch">
+        <span id="auth-switch-text">Don't have an account?</span>
+        <a href="#" id="auth-switch-link" onclick="toggleAuthMode(event)">Register</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <section id="screen-setup" class="screen active">
+    <div class="container">
+      <h1 class="title glow">GUESS THE<br>NUMBER</h1>
+      <p class="subtitle">Pick your challenge. Beat the clock.</p>
+
+      <div class="mode-buttons">
+        <button class="mode-btn" data-mode="easy" onclick="selectMode('easy')">
+          <span class="mode-icon">&#9733;</span>
+          <span class="mode-label">Easy</span>
+        </button>
+        <button class="mode-btn" data-mode="classic" onclick="selectMode('classic')">
+          <span class="mode-icon">&#9733;&#9733;</span>
+          <span class="mode-label">Classic</span>
+        </button>
+        <button class="mode-btn" data-mode="hard" onclick="selectMode('hard')">
+          <span class="mode-icon">&#9733;&#9733;&#9733;</span>
+          <span class="mode-label">Hard</span>
+        </button>
+        <button class="mode-btn" data-mode="sandbox" onclick="selectMode('sandbox')">
+          <span class="mode-icon">&#9881;</span>
+          <span class="mode-label">Sandbox</span>
+        </button>
+      </div>
+
+      <div class="settings-grid">
+        <div class="form-group">
+          <label for="setting-min">Min Number</label>
+          <input type="number" id="setting-min" value="1" min="0">
+        </div>
+        <div class="form-group">
+          <label for="setting-max">Max Number</label>
+          <input type="number" id="setting-max" value="100" min="1">
+        </div>
+        <div class="form-group">
+          <label for="setting-time">Time (sec)</label>
+          <input type="number" id="setting-time" value="60" min="5">
+        </div>
+        <div class="form-group">
+          <label for="setting-tries">Max Tries</label>
+          <input type="number" id="setting-tries" value="7" min="1">
+        </div>
+      </div>
+
+      <div id="setup-error" class="error-msg hidden"></div>
+      <button class="btn primary-btn start-btn" onclick="startGame()">Start Game</button>
+    </div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="screen-game" class="screen">
+    <div class="container game-container">
+      <div class="game-hud">
+        <div class="hud-item">
+          <span class="hud-label">Mode</span>
+          <span id="hud-mode" class="hud-value">Classic</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Time</span>
+          <span id="hud-time" class="hud-value">60</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Tries</span>
+          <span id="hud-tries" class="hud-value">7</span>
+        </div>
+      </div>
+
+      <div class="game-range">
+        Guess a number between <strong id="game-min">1</strong> and <strong id="game-max">100</strong>
+      </div>
+
+      <div class="guess-area">
+        <input type="number" id="guess-input" class="guess-input" placeholder="?" autocomplete="off">
+        <button class="btn primary-btn guess-btn" id="guess-btn" onclick="submitGuess()">Guess</button>
+      </div>
+
+      <div id="game-feedback" class="feedback hidden"></div>
+
+      <div id="guess-history" class="guess-history"></div>
+    </div>
+  </section>
+
+  <!-- WIN SCREEN -->
+  <section id="screen-win" class="screen">
+    <div class="container result-container">
+      <h2 class="result-title win-title glow">YOU GOT IT!</h2>
+      <div class="result-stats">
+        <div class="stat">
+          <span class="stat-label">Mode</span>
+          <span id="win-mode" class="stat-value">Classic</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Time</span>
+          <span id="win-time" class="stat-value">23s</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Tries</span>
+          <span id="win-tries" class="stat-value">4</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Score</span>
+          <span id="win-score" class="stat-value accent">530</span>
+        </div>
+      </div>
+      <div id="win-leaderboard-section">
+        <button id="win-submit-btn" class="btn primary-btn" onclick="submitScore()">Submit to Leaderboard</button>
+        <div id="win-submit-msg" class="hidden"></div>
+      </div>
+      <div id="win-guest-prompt" class="guest-prompt hidden">
+        <p>Want to be on the leaderboard? Register now — your score will be saved.</p>
+        <button class="btn accent-btn" onclick="showAuthModal('register', true)">Register</button>
+      </div>
+      <div class="result-actions">
+        <button class="btn secondary-btn" onclick="playAgain()">Play Again</button>
+        <button class="btn secondary-btn" onclick="backToSetup()">Back to Setup</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME OVER SCREEN -->
+  <section id="screen-gameover" class="screen">
+    <div class="container result-container">
+      <h2 class="result-title lose-title">GAME OVER</h2>
+      <p id="gameover-reason" class="gameover-reason">You ran out of tries!</p>
+      <p class="gameover-answer">The number was <strong id="gameover-number">42</strong></p>
+      <div class="result-actions">
+        <button class="btn secondary-btn" onclick="playAgain()">Play Again</button>
+        <button class="btn secondary-btn" onclick="backToSetup()">Back to Setup</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD SCREEN -->
+  <section id="screen-leaderboard" class="screen">
+    <div class="container">
+      <h2 class="section-title glow">Leaderboard</h2>
+      <div class="lb-tabs">
+        <button class="lb-tab active" data-mode="easy" onclick="switchLeaderboardTab('easy')">Easy</button>
+        <button class="lb-tab" data-mode="classic" onclick="switchLeaderboardTab('classic')">Classic</button>
+        <button class="lb-tab" data-mode="hard" onclick="switchLeaderboardTab('hard')">Hard</button>
+      </div>
+      <div id="lb-loading" class="loading hidden">Loading...</div>
+      <div id="lb-error" class="error-msg hidden"></div>
+      <table id="lb-table" class="lb-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Tries</th>
+            <th>Time</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+      <p id="lb-empty" class="lb-empty hidden">No scores yet. Be the first!</p>
+      <button class="btn secondary-btn back-btn" onclick="backToSetup()">Back to Setup</button>
+    </div>
+  </section>
+
+  <script src="game.js"></script>
+</body>
+</html>
