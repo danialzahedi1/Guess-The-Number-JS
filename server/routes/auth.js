@@ -11,8 +11,12 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
-  if (username.length < 3 || username.length > 50) {
-    return res.status(400).json({ error: 'Username must be 3-50 characters.' });
+  if (username.length < 3 || username.length > 20) {
+    return res.status(400).json({ error: 'Username must be 3-20 characters.' });
+  }
+
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return res.status(400).json({ error: 'Username can only contain letters, numbers, underscores, and hyphens. No spaces.' });
   }
 
   if (password.length < 4) {
@@ -85,6 +89,30 @@ router.get('/me', (req, res) => {
     res.json({ loggedIn: true, username: req.session.username, userId: req.session.userId });
   } else {
     res.json({ loggedIn: false });
+  }
+});
+
+router.delete('/account', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'You must be logged in to delete your account.' });
+  }
+
+  const userId = req.session.userId;
+
+  try {
+    await pool.query('DELETE FROM scores WHERE user_id = ?', [userId]);
+    await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+
+    req.session.destroy(err => {
+      if (err) {
+        return res.status(500).json({ error: 'Account deleted but session could not be cleared.' });
+      }
+      res.clearCookie('connect.sid');
+      res.json({ message: 'Account deleted successfully.' });
+    });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
 

@@ -18,6 +18,7 @@
       <span id="nav-user" class="nav-user hidden"></span>
       <button id="nav-login-btn" class="nav-btn" onclick="showAuthModal('login')">Log In</button>
       <button id="nav-register-btn" class="nav-btn accent-btn" onclick="showAuthModal('register')">Register</button>
+      <button id="nav-delete-btn" class="nav-btn danger-nav-btn hidden" onclick="showDeleteModal()">Delete Account</button>
       <button id="nav-logout-btn" class="nav-btn hidden" onclick="logout()">Log Out</button>
       <button id="nav-leaderboard-btn" class="nav-btn" onclick="showScreen('leaderboard')">Leaderboard</button>
     </div>
@@ -32,11 +33,16 @@
       <form id="auth-form" onsubmit="handleAuth(event)">
         <div class="form-group">
           <label for="auth-username">Username</label>
-          <input type="text" id="auth-username" autocomplete="username" required>
+          <input type="text" id="auth-username" autocomplete="username" required maxlength="20">
+          <span id="username-hint" class="input-hint hidden">Letters, numbers, _ and - only. No spaces.</span>
         </div>
         <div class="form-group">
           <label for="auth-password">Password</label>
           <input type="password" id="auth-password" autocomplete="current-password" required>
+        </div>
+        <div class="form-group" id="confirm-password-group" style="display:none;">
+          <label for="auth-confirm-password">Confirm Password</label>
+          <input type="password" id="auth-confirm-password" autocomplete="new-password">
         </div>
         <div id="auth-error" class="error-msg hidden"></div>
         <button type="submit" id="auth-submit-btn" class="btn primary-btn">Log In</button>
@@ -45,6 +51,22 @@
         <span id="auth-switch-text">Don't have an account?</span>
         <a href="#" id="auth-switch-link" onclick="toggleAuthMode(event)">Register</a>
       </p>
+    </div>
+  </div>
+
+  <!-- DELETE ACCOUNT MODAL -->
+  <div id="delete-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeDeleteModal()"></div>
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+      <h2 style="color: var(--danger);">Delete Account</h2>
+      <p class="delete-warning">This will permanently delete your account and all your scores. This cannot be undone.</p>
+      <div class="form-group">
+        <label for="delete-confirm-input">Type DELETE to confirm</label>
+        <input type="text" id="delete-confirm-input" autocomplete="off" oninput="checkDeleteInput()">
+      </div>
+      <div id="delete-error" class="error-msg hidden"></div>
+      <button id="delete-confirm-btn" class="btn danger-btn" onclick="deleteAccount()" disabled>Delete My Account</button>
     </div>
   </div>
 

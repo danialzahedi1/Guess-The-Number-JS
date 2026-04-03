@@ -53,6 +53,7 @@ function updateNavAuth() {
   const loginBtn = document.getElementById('nav-login-btn');
   const registerBtn = document.getElementById('nav-register-btn');
   const logoutBtn = document.getElementById('nav-logout-btn');
+  const deleteBtn = document.getElementById('nav-delete-btn');
 
   if (currentUser) {
     userEl.textContent = currentUser.username;
@@ -60,11 +61,13 @@ function updateNavAuth() {
     loginBtn.classList.add('hidden');
     registerBtn.classList.add('hidden');
     logoutBtn.classList.remove('hidden');
+    deleteBtn.classList.remove('hidden');
   } else {
     userEl.classList.add('hidden');
     loginBtn.classList.remove('hidden');
     registerBtn.classList.remove('hidden');
     logoutBtn.classList.add('hidden');
+    deleteBtn.classList.add('hidden');
   }
 }
 
@@ -78,20 +81,28 @@ function showAuthModal(mode, fromWin = false) {
 
   modal.dataset.mode = mode;
 
+  const usernameHint = document.getElementById('username-hint');
+  const confirmGroup = document.getElementById('confirm-password-group');
+
   if (mode === 'login') {
     title.textContent = 'Log In';
     submitBtn.textContent = 'Log In';
     switchText.textContent = "Don't have an account?";
     switchLink.textContent = 'Register';
+    usernameHint.classList.add('hidden');
+    confirmGroup.style.display = 'none';
   } else {
     title.textContent = 'Register';
     submitBtn.textContent = 'Register';
     switchText.textContent = 'Already have an account?';
     switchLink.textContent = 'Log In';
+    usernameHint.classList.remove('hidden');
+    confirmGroup.style.display = 'block';
   }
 
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
+  document.getElementById('auth-confirm-password').value = '';
   hideError('auth-error');
   modal.classList.remove('hidden');
 }
@@ -121,6 +132,22 @@ async function handleAuth(e) {
     return;
   }
 
+  if (mode === 'register') {
+    if (username.length < 3 || username.length > 20) {
+      showError('auth-error', 'Username must be 3-20 characters.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      showError('auth-error', 'Username can only contain letters, numbers, underscores, and hyphens. No spaces.');
+      return;
+    }
+    const confirmPassword = document.getElementById('auth-confirm-password').value;
+    if (password !== confirmPassword) {
+      showError('auth-error', 'Passwords do not match.');
+      return;
+    }
+  }
+
   submitBtn.disabled = true;
   submitBtn.textContent = 'Loading...';
 
@@ -140,10 +167,13 @@ async function handleAuth(e) {
 
     currentUser = { username: data.username };
     updateNavAuth();
+
+    // save this before closeAuthModal() resets it to false
+    const wasFromWin = submitFromWin;
     closeAuthModal();
 
     // if registering from win screen, auto-submit pending score
-    if (submitFromWin && pendingScore) {
+    if (wasFromWin && pendingScore) {
       await submitScoreToServer(pendingScore);
       pendingScore = null;
       refreshWinScreen();
@@ -575,4 +605,49 @@ function escapeHTML(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// --- Delete Account ---
+
+function showDeleteModal() {
+  document.getElementById('delete-confirm-input').value = '';
+  document.getElementById('delete-confirm-btn').disabled = true;
+  hideError('delete-error');
+  document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.add('hidden');
+}
+
+function checkDeleteInput() {
+  const val = document.getElementById('delete-confirm-input').value;
+  document.getElementById('delete-confirm-btn').disabled = val !== 'DELETE';
+}
+
+async function deleteAccount() {
+  const btn = document.getElementById('delete-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting...';
+
+  try {
+    const res = await fetch('/api/auth/account', { method: 'DELETE' });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError('delete-error', data.error);
+      btn.disabled = false;
+      btn.textContent = 'Delete My Account';
+      return;
+    }
+
+    currentUser = null;
+    updateNavAuth();
+    closeDeleteModal();
+    backToSetup();
+  } catch (err) {
+    showError('delete-error', 'Connection error. Try again.');
+    btn.disabled = false;
+    btn.textContent = 'Delete My Account';
+  }
 }
