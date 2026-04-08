@@ -149,6 +149,8 @@
       <div id="game-feedback" class="feedback hidden"></div>
 
       <div id="guess-history" class="guess-history"></div>
+
+      <button class="btn give-up-btn" onclick="giveUp()">Give Up</button>
     </div>
   </section>
 
@@ -179,8 +181,11 @@
         <div id="win-submit-msg" class="hidden"></div>
       </div>
       <div id="win-guest-prompt" class="guest-prompt hidden">
-        <p>Want to be on the leaderboard? Register now — your score will be saved.</p>
-        <button class="btn accent-btn" onclick="showAuthModal('register', true)">Register</button>
+        <p>Want to be on the leaderboard? Log in or register — your score will be saved.</p>
+        <div class="guest-prompt-actions">
+          <button class="btn accent-btn" onclick="showAuthModal('login', true)">Log In</button>
+          <button class="btn secondary-btn" onclick="showAuthModal('register', true)">Register</button>
+        </div>
       </div>
       <div class="result-actions">
         <button class="btn secondary-btn" onclick="playAgain()">Play Again</button>

@@ -41,7 +41,7 @@ body {
   background: var(--bg-deep);
   color: var(--text);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
   background-image:
     radial-gradient(ellipse at 20% 50%, rgba(0, 240, 255, 0.04) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 20%, rgba(255, 45, 117, 0.04) 0%, transparent 50%);
@@ -74,8 +74,7 @@ body {
   transform-origin:center;
 }
 .nav-brand:hover {
-  padding-left: 400px;
-  margin-right: 400px;
+  padding-inline: 00px;
 }
 
 .nav-brand:active {
@@ -517,6 +516,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1.5);
+  transform-origin: center;
 }
 
 .game-hud {
@@ -649,6 +653,27 @@ body {
   color: var(--warning);
 }
 
+.give-up-btn {
+  margin-top: 2rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.give-up-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 /* Shake animation */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -671,7 +696,11 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding-top: 3rem;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1.5);
+  transform-origin: center;
 }
 
 .result-title {
@@ -683,12 +712,12 @@ body {
 
 .win-title {
   color: var(--success);
-  text-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+  text-shadow: 0 0 30px rgb(0, 255, 136);
 }
 
 .lose-title {
   color: var(--danger);
-  text-shadow: 0 0 30px rgba(255, 51, 85, 0.4);
+  text-shadow: 0 0 30px rgb(255, 51, 85);
 }
 
 .result-stats {
@@ -734,6 +763,12 @@ body {
   margin-bottom: 0.75rem;
   color: var(--text-dim);
   font-size: 0.95rem;
+}
+
+.guest-prompt-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
 }
 
 .gameover-reason {
@@ -892,12 +927,4 @@ body {
 }
 
 /* Number input spinner removal */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-input[type="number"] {
-  -moz-appearance: textfield;
-}
+input[type="number"]::-w

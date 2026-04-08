@@ -21,15 +21,142 @@ const PRESETS = {
   hard:    { min: 1, max: 200, time: 30,  tries: 5 }
 };
 
+// --- Game State Persistence ---
+
+function saveGameState() {
+  const state = {
+    targetNumber,
+    triesLeft,
+    timeLeft,
+    currentMode,
+    gameSettings,
+    guessHistory,
+    savedAt: Date.now()
+  };
+  localStorage.setItem('guessGameState', JSON.stringify(state));
+}
+
+function clearGameState() {
+  localStorage.removeItem('guessGameState');
+}
+
+function saveWinState(mode, timeTaken, triesUsed, score, scoreSubmitted) {
+  localStorage.setItem('guessWinState', JSON.stringify({
+    mode, timeTaken, triesUsed, score, scoreSubmitted
+  }));
+}
+
+function clearWinState() {
+  localStorage.removeItem('guessWinState');
+}
+
+function restoreWinState() {
+  const raw = localStorage.getItem('guessWinState');
+  if (!raw) return false;
+
+  const { mode, timeTaken, triesUsed, score, scoreSubmitted } = JSON.parse(raw);
+
+  currentMode = mode;
+
+  document.getElementById('win-mode').textContent  = capitalize(mode);
+  document.getElementById('win-time').textContent   = timeTaken + 's';
+  document.getElementById('win-tries').textContent  = triesUsed;
+  document.getElementById('win-score').textContent  = score;
+
+  const leaderboardSection = document.getElementById('win-leaderboard-section');
+  const guestPrompt        = document.getElementById('win-guest-prompt');
+  const submitBtn          = document.getElementById('win-submit-btn');
+  const submitMsg          = document.getElementById('win-submit-msg');
+
+  submitMsg.classList.add('hidden');
+  submitMsg.className = 'hidden';
+
+  if (mode === 'sandbox') {
+    leaderboardSection.classList.add('hidden');
+    guestPrompt.classList.add('hidden');
+  } else if (scoreSubmitted) {
+    leaderboardSection.classList.remove('hidden');
+    guestPrompt.classList.add('hidden');
+    submitMsg.textContent = 'Score submitted!';
+    submitMsg.className = 'success';
+    submitMsg.classList.remove('hidden');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitted';
+  } else if (currentUser) {
+    leaderboardSection.classList.remove('hidden');
+    guestPrompt.classList.add('hidden');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit to Leaderboard';
+  } else {
+    leaderboardSection.classList.add('hidden');
+    guestPrompt.classList.remove('hidden');
+    pendingScore = { mode, score, triesUsed, timeUsed: timeTaken };
+  }
+
+  submitBtn.dataset.score = JSON.stringify({ mode, score, triesUsed, timeUsed: timeTaken });
+
+  showScreen('win');
+  return true;
+}
+
+function restoreGameState() {
+  const raw = localStorage.getItem('guessGameState');
+  if (!raw) return false;
+
+  const state = JSON.parse(raw);
+  const secondsElapsed = Math.floor((Date.now() - state.savedAt) / 1000);
+  const adjustedTime = state.timeLeft - secondsElapsed;
+
+  if (adjustedTime <= 0) {
+    clearGameState();
+    return false;
+  }
+
+  targetNumber   = state.targetNumber;
+  triesLeft      = state.triesLeft;
+  timeLeft       = adjustedTime;
+  currentMode    = state.currentMode;
+  gameSettings   = state.gameSettings;
+  guessHistory   = state.guessHistory;
+
+  const { min, max } = gameSettings;
+
+  document.getElementById('hud-mode').textContent  = capitalize(currentMode);
+  document.getElementById('hud-time').textContent   = timeLeft;
+  document.getElementById('hud-tries').textContent  = triesLeft;
+  document.getElementById('game-min').textContent   = min;
+  document.getElementById('game-max').textContent   = max;
+  document.getElementById('guess-input').value      = '';
+  document.getElementById('guess-input').disabled   = false;
+  document.getElementById('guess-btn').disabled     = false;
+  document.getElementById('game-feedback').classList.add('hidden');
+  document.getElementById('guess-history').innerHTML = '';
+
+  if (timeLeft <= 10) {
+    document.getElementById('hud-time').classList.add('danger');
+  }
+
+  guessHistory.forEach(g => addHistoryChip(g.val, g.direction));
+
+  showScreen('game');
+  document.getElementById('guess-input').focus();
+  startTimer();
+
+  return true;
+}
+
 // --- Init ---
 
-document.addEventListener('DOMContentLoaded', () => {
-  checkSession();
-  selectMode('classic');
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkSession();
 
   document.getElementById('guess-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitGuess();
   });
+
+  if (!restoreGameState() && !restoreWinState()) {
+    selectMode('classic');
+  }
 });
 
 // --- Auth ---
@@ -72,6 +199,7 @@ function updateNavAuth() {
 }
 
 function showAuthModal(mode, fromWin = false) {
+  if (['game'].includes(activeScreen) && !fromWin) return;
   submitFromWin = fromWin;
   const modal = document.getElementById('auth-modal');
   const title = document.getElementById('auth-modal-title');
@@ -187,6 +315,7 @@ async function handleAuth(e) {
 }
 
 async function logout() {
+  if (['game', 'win', 'gameover'].includes(activeScreen)) return;
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
     currentUser = null;
@@ -298,6 +427,8 @@ function startTimer() {
       timeEl.classList.add('danger');
     }
 
+    saveGameState();
+
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
       endGame('time');
@@ -335,6 +466,7 @@ function submitGuess() {
   addHistoryChip(val, direction);
   showFeedback(label, direction === 'high' ? 'too-high' : 'too-low');
   triggerShake(input);
+  saveGameState();
 
   input.value = '';
   input.focus();
@@ -368,6 +500,7 @@ function triggerShake(el) {
 // --- Win ---
 
 function winGame() {
+  clearGameState();
   const timeTaken = gameSettings.time - timeLeft;
   const triesUsed = gameSettings.tries - triesLeft;
   const score = Math.floor((triesLeft * 100) + (timeLeft * 10));
@@ -412,6 +545,7 @@ function winGame() {
     timeUsed: timeTaken
   });
 
+  saveWinState(currentMode, timeTaken, triesUsed, score, false);
   showScreen('win');
 }
 
@@ -429,6 +563,9 @@ function refreshWinScreen() {
     submitMsg.classList.remove('hidden');
 
     document.getElementById('win-submit-btn').disabled = true;
+
+    const saved = JSON.parse(localStorage.getItem('guessWinState') || '{}');
+    if (saved.mode) saveWinState(saved.mode, saved.timeTaken, saved.triesUsed, saved.score, true);
   }
 }
 
@@ -446,6 +583,8 @@ async function submitScore() {
     msg.textContent = 'Score submitted!';
     msg.className = 'success';
     btn.textContent = 'Submitted';
+    const saved = JSON.parse(localStorage.getItem('guessWinState') || '{}');
+    if (saved.mode) saveWinState(saved.mode, saved.timeTaken, saved.triesUsed, saved.score, true);
   } else {
     msg.textContent = 'Failed to submit. Try again.';
     msg.className = 'error';
@@ -474,6 +613,7 @@ async function submitScoreToServer(scoreData) {
 // --- Game Over ---
 
 function endGame(reason) {
+  clearGameState();
   document.getElementById('guess-input').disabled = true;
   document.getElementById('guess-btn').disabled = true;
 
@@ -487,28 +627,37 @@ function endGame(reason) {
 // --- Navigation ---
 
 function playAgain() {
+  clearWinState();
   startGame();
 }
 
 function backToSetup() {
   clearInterval(timerInterval);
+  clearWinState();
   showScreen('setup');
+  selectMode(currentMode || 'classic');
 }
+
+function giveUp() {
+  clearInterval(timerInterval);
+  clearGameState();
+  showScreen('setup');
+  selectMode(currentMode || 'classic');
+}
+
+let activeScreen = 'setup';
 
 function showScreen(name) {
   clearInterval(timerInterval);
 
-  // don't kill timer if switching to the game screen
-  if (name === 'game') {
-    // timer started by startGame
-  }
+  activeScreen = name;
+  updateNavAuthAvailability();
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
   const screen = document.getElementById('screen-' + name);
   if (screen) {
     screen.classList.add('active');
-    // force re-trigger animation
     screen.style.animation = 'none';
     void screen.offsetWidth;
     screen.style.animation = '';
@@ -517,6 +666,21 @@ function showScreen(name) {
   if (name === 'leaderboard') {
     loadLeaderboard('easy');
   }
+}
+
+function updateNavAuthAvailability() {
+  const blocked = ['game', 'win', 'gameover'].includes(activeScreen);
+  const loginBtn    = document.getElementById('nav-login-btn');
+  const registerBtn = document.getElementById('nav-register-btn');
+  const logoutBtn   = document.getElementById('nav-logout-btn');
+  const deleteBtn   = document.getElementById('nav-delete-btn');
+
+  [loginBtn, registerBtn, logoutBtn, deleteBtn].forEach(btn => {
+    if (!btn) return;
+    btn.disabled = blocked;
+    btn.style.opacity = blocked ? '0.35' : '';
+    btn.style.cursor  = blocked ? 'not-allowed' : '';
+  });
 }
 
 // --- Leaderboard ---
