@@ -210,7 +210,10 @@
   <!-- LEADERBOARD SCREEN -->
   <section id="screen-leaderboard" class="screen">
     <div class="container">
-      <h2 class="section-title glow">Leaderboard</h2>
+      <div class="lb-header">
+        <button class="btn secondary-btn back-btn" onclick="backToSetup()">&#8592; Back</button>
+        <h2 class="section-title glow">Leaderboard</h2>
+      </div>
       <div class="lb-tabs">
         <button class="lb-tab active" data-mode="easy" onclick="switchLeaderboardTab('easy')">Easy</button>
         <button class="lb-tab" data-mode="classic" onclick="switchLeaderboardTab('classic')">Classic</button>
@@ -232,7 +235,6 @@
         <tbody id="lb-body"></tbody>
       </table>
       <p id="lb-empty" class="lb-empty hidden">No scores yet. Be the first!</p>
-      <button class="btn secondary-btn back-btn" onclick="backToSetup()">Back to Setup</button>
     </div>
   </section>
 

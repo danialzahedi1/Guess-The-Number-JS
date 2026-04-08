@@ -6,6 +6,7 @@
 
 let currentUser = null;         // { username, userId } or null
 let currentMode = null;         // 'easy' | 'classic' | 'hard' | 'sandbox'
+let currentLBTab = 'easy';     // active leaderboard tab
 let gameSettings = {};           // { min, max, time, tries }
 let targetNumber = null;
 let triesLeft = 0;
@@ -155,7 +156,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if (!restoreGameState() && !restoreWinState()) {
-    selectMode('classic');
+    if (localStorage.getItem('guessActiveScreen') === 'leaderboard') {
+      showScreen('leaderboard');
+    } else {
+      selectMode('classic');
+    }
   }
 });
 
@@ -664,7 +669,15 @@ function showScreen(name) {
   }
 
   if (name === 'leaderboard') {
-    loadLeaderboard('easy');
+    localStorage.setItem('guessActiveScreen', 'leaderboard');
+    const savedTab = localStorage.getItem('guessLBTab') || 'easy';
+    currentLBTab = savedTab;
+    document.querySelectorAll('.lb-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.mode === savedTab);
+    });
+    loadLeaderboard(savedTab);
+  } else {
+    localStorage.removeItem('guessActiveScreen');
   }
 }
 
@@ -685,10 +698,9 @@ function updateNavAuthAvailability() {
 
 // --- Leaderboard ---
 
-let currentLBMode = 'easy';
-
 function switchLeaderboardTab(mode) {
-  currentLBMode = mode;
+  currentLBTab = mode;
+  localStorage.setItem('guessLBTab', mode);
 
   document.querySelectorAll('.lb-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.mode === mode);
@@ -727,7 +739,8 @@ async function loadLeaderboard(mode) {
       const tr = document.createElement('tr');
       if (i < 3) tr.className = `rank-${i + 1}`;
 
-      const date = new Date(row.created_at).toLocaleDateString();
+      const d = new Date(row.created_at);
+      const date = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
 
       tr.innerHTML = `
         <td>${i + 1}</td>
